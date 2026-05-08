@@ -112,7 +112,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto
 
 <script>
 const DATABASE_ID = '897d93a3c4f64e87b494bad8fbeaef11';
-const PROXY = 'https://notion-proxy.vercel.app/api/notion';
 
 const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 const DAY_ZH = ['週一','週二','週三','週四','週五','週六','週日'];
@@ -187,34 +186,28 @@ function showError(msg){
 function clearError(){document.getElementById('error-container').innerHTML='';}
 
 async function notionRequest(endpoint, method='GET', body=null){
-    const path = endpoint.replace(/^\/v1\//, "");
-    const url = `${window.location.origin}/api/notion?path=${encodeURIComponent(path)}`;
-    
-    const opts = {
-        method: method,
-        headers: {
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json'
-        }
-    };
-
-    if(body) {
-        opts.body = JSON.stringify(body);
+  const path = endpoint.replace(/^\/v1\//, "");
+  const url = `/api/notion?path=${encodeURIComponent(path)}`;
+  
+  const opts = {
+    method: method,
+    headers: {
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
     }
+  };
 
-    const resp = await fetch(url, opts);
-    
-    if(!resp.ok){
-        const err = await resp.text();
-        throw new Error(`Notion API ${resp.status}: ${err}`);
-    }
-    
-    return resp.json();
-}
+  if(body) {
+    opts.body = JSON.stringify(body);
+  }
+
+  const resp = await fetch(url, opts);
+  
   if(!resp.ok){
-    const err=await resp.text();
+    const err = await resp.text();
     throw new Error(`Notion API ${resp.status}: ${err}`);
   }
+  
   return resp.json();
 }
 
