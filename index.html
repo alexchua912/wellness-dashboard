@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wellness Wheel Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FAFAF7;--card:#FFFFFF;--border:#E8E6E1;--border-strong:#D4D2CC;
+  --text:#222222;--text-2:#6B6B6B;--text-3:#A2AAAD;--bg-2:#F2F0E9;
+  --primary:#053259;--accent:#D9C666;--green:#1D9E75;--blue:#378ADD;
+  --gray:#B4B2A9;--radius:8px;--radius-sm:4px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);padding:20px;font-size:14px;line-height:1.5}
+.container{max-width:900px;margin:0 auto}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px}
+.top-title{font-size:16px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top-date{font-size:13px;color:var(--text-2)}
+.sync-status{font-size:11px;padding:4px 10px;border-radius:100px;display:flex;align-items:center;gap:5px;transition:all .3s}
+.sync-status.idle{background:var(--bg-2);color:var(--text-3)}
+.sync-status.syncing{background:#E6F1FB;color:#0C447C}
+.sync-status.ok{background:#E1F5EE;color:#085041}
+.sync-status.err{background:#FAECE7;color:#712B13}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sync-dot.pulse{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{background:transparent;border:1px solid var(--border-strong);color:var(--text-2);font-size:12px;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{background:var(--bg-2);color:var(--text)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1.5rem}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--text-2);margin-bottom:4px;letter-spacing:.04em}
+.stat-val{font-size:24px;font-weight:600;color:var(--text);line-height:1.2}
+.stat-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+.day-tabs{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap}
+.day-btn{font-size:12px;padding:6px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;transition:all .15s;font-family:inherit}
+.day-btn:hover{background:var(--bg-2)}
+.day-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.day-btn.has-done{border-color:var(--accent)}
+.group-block{margin-bottom:1.25rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.group-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.group-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.group-pct{font-size:11px;color:var(--text-2)}
+.group-bar-bg{height:4px;background:var(--bg-2);border-radius:100px;overflow:hidden;margin-bottom:8px}
+.group-bar-fill{height:100%;border-radius:100px;transition:width .4s}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-radius:var(--radius-sm);cursor:pointer;transition:background .1s;position:relative}
+.task-row:hover{background:var(--bg-2)}
+.task-row.loading{opacity:.5;pointer-events:none}
+.check-box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s}
+.check-box.done{border-color:transparent}
+.task-text{font-size:13px;color:var(--text);line-height:1.45;flex:1;transition:color .15s}
+.task-text.done{color:var(--text-3);text-decoration:line-through}
+.task-notion-id{display:none}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px}
+.loading-overlay{text-align:center;padding:60px 20px;color:var(--text-2);font-size:13px}
+.loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-card{background:#FAECE7;border:1px solid #F5C4B3;border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;font-size:13px;color:#712B13}
+.error-card strong{display:block;margin-bottom:4px}
+.week-section{margin-top:1.5rem}
+.week-label{font-size:11px;font-weight:600;color:var(--text-2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.week-cell{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 4px;text-align:center;cursor:pointer;transition:all .15s}
+.week-cell:hover{background:var(--bg-2)}
+.week-cell.active{outline:2px solid var(--primary);outline-offset:-1px}
+.week-day{font-size:11px;color:var(--text-2);margin-bottom:6px}
+.week-day.today{color:var(--primary);font-weight:600}
+.week-pct{font-size:14px;font-weight:600;color:var(--text)}
+.week-bar-bg{height:36px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.week-bar-fill{border-radius:3px;transition:height .3s;min-height:2px}
+.footer-note{margin-top:24px;font-size:11px;color:var(--text-3);text-align:center}
+@media(max-width:600px){body{padding:12px;font-size:13px}.stat-val{font-size:20px}.week-bar-bg{height:24px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="top-bar">
+  <div class="top-title">🌿 Wellness Wheel</div>
+  <div class="top-actions">
+    <div class="top-date" id="today-label"></div>
+    <div class="sync-status idle" id="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-text">準備中</span>
+    </div>
+    <button class="btn" id="refresh-btn" title="從 Notion 重新讀取">↻ 同步</button>
+  </div>
+</div>
+
+<div id="error-container"></div>
+
+<div class="stat-row">
+  <div class="stat"><div class="stat-label">今日完成</div><div class="stat-val" id="s-done">—</div><div class="stat-sub" id="s-total">載入中</div></div>
+  <div class="stat"><div class="stat-label">完成率</div><div class="stat-val" id="s-pct">—</div><div class="stat-sub">今天</div></div>
+  <div class="stat"><div class="stat-label">本週平均</div><div class="stat-val" id="s-week">—</div><div class="stat-sub">完成率</div></div>
+  <div class="stat"><div class="stat-label">最佳紀錄日</div><div class="stat-val" id="s-best">—</div><div class="stat-sub" id="s-best-day"></div></div>
+</div>
+
+<div class="day-tabs" id="day-tabs"></div>
+<div id="main-content"><div class="loading-overlay"><div class="loading-spinner"></div><br>正在從 Notion 讀取資料…</div></div>
+
+<div class="week-section">
+  <div class="week-label">本週總覽</div>
+  <div class="week-grid" id="week-grid"></div>
+</div>
+
+<div class="footer-note">資料同步至 Notion DB · 打勾即時更新 · 任何裝置開啟均為最新狀態</div>
+
+</div>
+
+<script>
+const NOTION_TOKEN = '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';
+const DATABASE_ID = '897d93a3c4f64e87b494bad8fbeaef11';
+const PROXY = 'https://notion-proxy.vercel.app/api/notion';
+
+const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const DAY_ZH = ['週一','週二','週三','週四','週五','週六','週日'];
+
+const TASK_DAY_MAP = {
+  'threads 發文':                               ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  'Duolingo 10mins+5mins log':                  ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  '每日記錄心情及需要':                          ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  '覆盤 daily':                                 ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  'normal 睇市 log sheet':                      ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  'LinkedIn add 20 connections':                ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  'Photo IG: launch 1 post':                    ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  '社科書 15mins+5mins obsidian':               ['MON','TUE','WED','THU','FRI','SAT','SUN'],
+  '電影 review':                                ['MON','WED','FRI'],
+  'draft blog 01+02':                           ['MON','WED'],
+  'writing with GPT (tbc)':                     ['MON','WED','FRI'],
+  'review interview question':                  ['MON','WED','FRI'],
+  '踩機 + Stretching':                          ['MON','WED'],
+  'post 生活照':                                ['MON','WED','FRI','SAT'],
+  '股市：阿樂 patreon > 跟盤/不跟盤 15mins':    ['MON'],
+  'LinkedIn post: trending':                    ['MON'],
+  'heungshing-web: keyword research + outlines':['TUE','WED'],
+  '電影顏色':                                   ['TUE'],
+  'business present':                           ['TUE'],
+  '在家拉筋':                                   ['TUE','FRI'],
+  '學股市知識 > obsidian 10mins+5mins':         ['TUE','WED','THU','FRI','SAT','SUN'],
+  '財經書 15mins+5mins obsidian':               ['TUE','THU','SAT','SUN'],
+  '電影專題':                                   ['THU'],
+  '明報英文':                                   ['THU'],
+  '背/腳/胸 訓練':                              ['THU','SAT','SUN'],
+  '電影對白':                                   ['FRI'],
+  'spelling check':                             ['FRI'],
+  'Photo IG: launch 1 video post':              ['FRI'],
+  'LinkedIn post: threads insights':            ['SAT'],
+  'SEO 工作':                                   ['SAT','SUN'],
+  'postcrossing':                               ['SAT'],
+  'call 婆婆':                                  ['SAT','SUN'],
+  '約食飯 plan':                                ['SUN'],
+  'call noi':                                   ['SUN'],
+};
+
+const GROUP_ORDER = [
+  {id:'Accomplishment & Growth', color:'#185FA5'},
+  {id:'Financial',               color:'#D9963D'},
+  {id:'Physical Well-being',     color:'#1D9E75'},
+  {id:'Social & Relationship',   color:'#7359B5'},
+  {id:'Mental Well-being',       color:'#C0567B'},
+];
+
+let state = {
+  activeDay: getTodayIdx(),
+  pages: [],
+  updating: new Set(),
+};
+
+function getTodayIdx(){const d=new Date().getDay();return d===0?6:d-1}
+function formatDate(){return new Date().toLocaleDateString('zh-HK',{year:'numeric',month:'long',day:'numeric',weekday:'long'})}
+
+function setSyncStatus(type, text){
+  const el=document.getElementById('sync-status');
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  el.className='sync-status '+type;
+  dot.className='sync-dot'+(type==='syncing'?' pulse':'');
+  txt.textContent=text;
+}
+
+function showError(msg){
+  document.getElementById('error-container').innerHTML=
+    `<div class="error-card"><strong>同步錯誤</strong>${msg}</div>`;
+}
+function clearError(){document.getElementById('error-container').innerHTML='';}
+
+async function notionRequest(endpoint, method='GET', body=null){
+  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.notion.com'+endpoint)}`;
+  const opts = {
+    method,
+    headers:{
+      'Authorization':'Bearer '+NOTION_TOKEN,
+      'Notion-Version':'2022-06-28',
+      'Content-Type':'application/json',
+    },
+  };
+  if(body) opts.body=JSON.stringify(body);
+  const resp = await fetch(url, opts);
+  if(!resp.ok){
+    const err=await resp.text();
+    throw new Error(`Notion API ${resp.status}: ${err}`);
+  }
+  return resp.json();
+}
+
+async function loadFromNotion(){
+  setSyncStatus('syncing','讀取中…');
+  clearError();
+  try{
+    let allPages=[];
+    let cursor=null;
+    do{
+      const body={page_size:100};
+      if(cursor) body.start_cursor=cursor;
+      const data=await notionRequest(`/v1/databases/${DATABASE_ID}/query`,'POST',body);
+      allPages=[...allPages,...data.results];
+      cursor=data.has_more?data.next_cursor:null;
+    }while(cursor);
+    state.pages=allPages;
+    setSyncStatus('ok','已同步');
+    setTimeout(()=>setSyncStatus('idle','Notion'),3000);
+    clearError();
+    render();
+  }catch(e){
+    setSyncStatus('err','同步失敗');
+    showError(`無法連接 Notion API。請確認 integration 已授權給 DB。<br><small>${e.message}</small>`);
+    renderOffline();
+  }
+}
+
+async function toggleTask(pageId, currentVal){
+  if(state.updating.has(pageId)) return;
+  state.updating.add(pageId);
+  const newVal=!currentVal;
+  const page=state.pages.find(p=>p.id===pageId);
+  if(page) page.properties['Done Today'].checkbox=newVal;
+  render();
+  setSyncStatus('syncing','更新中…');
+  try{
+    await notionRequest(`/v1/pages/${pageId}`,'PATCH',{
+      properties:{'Done Today':{checkbox:newVal}}
+    });
+    setSyncStatus('ok','已儲存');
+    setTimeout(()=>setSyncStatus('idle','Notion'),2000);
+  }catch(e){
+    if(page) page.properties['Done Today'].checkbox=currentVal;
+    setSyncStatus('err','更新失敗');
+    showError(`無法更新任務狀態：${e.message}`);
+    render();
+  }finally{
+    state.updating.delete(pageId);
+  }
+}
+
+function getTaskName(page){
+  return page.properties['Task Name']?.title?.[0]?.plain_text||'(無名稱)';
+}
+function getTaskDay(page){
+  return (page.properties['Repeat Days']?.multi_select||[]).map(s=>s.name);
+}
+function getTaskGroup(page){
+  return page.properties['Core Value']?.select?.name||'';
+}
+function isDone(page){
+  return page.properties['Done Today']?.checkbox||false;
+}
+
+function getPagesForDay(dayKey){
+  return state.pages.filter(p=>getTaskDay(p).includes(dayKey));
+}
+
+function getDayStats(dayIdx){
+  const dayKey=DAYS[dayIdx];
+  const pages=getPagesForDay(dayKey);
+  const done=pages.filter(p=>isDone(p)).length;
+  return{total:pages.length,done};
+}
+
+function updateStats(){
+  const{total,done}=getDayStats(state.activeDay);
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-total').textContent='共 '+total+' 項';
+  document.getElementById('s-pct').textContent=total?Math.round(done/total*100)+'%':'0%';
+  let weekPcts=[];let bestPct=0;let bestIdx=-1;
+  DAYS.forEach((_,i)=>{
+    const r=getDayStats(i);
+    const p=r.total?Math.round(r.done/r.total*100):0;
+    weekPcts.push(p);
+    if(p>bestPct){bestPct=p;bestIdx=i;}
+  });
+  const filled=weekPcts.filter(p=>p>0);
+  document.getElementById('s-week').textContent=filled.length?Math.round(filled.reduce((a,b)=>a+b,0)/filled.length)+'%':'—';
+  document.getElementById('s-best').textContent=bestIdx>=0&&bestPct>0?bestPct+'%':'—';
+  document.getElementById('s-best-day').textContent=bestIdx>=0&&bestPct>0?DAY_ZH[bestIdx]:'';
+}
+
+function renderDayTabs(){
+  const c=document.getElementById('day-tabs');c.innerHTML='';
+  DAYS.forEach((d,i)=>{
+    const{done}=getDayStats(i);
+    const btn=document.createElement('button');
+    btn.className='day-btn'+(i===state.activeDay?' active':'')+(done>0?' has-done':'');
+    btn.textContent=DAY_ZH[i];
+    btn.addEventListener('click',()=>{state.activeDay=i;render();});
+    c.appendChild(btn);
+  });
+}
+
+function renderGroups(){
+  const container=document.getElementById('main-content');
+  container.innerHTML='';
+  const dayKey=DAYS[state.activeDay];
+
+  let anyTasks=false;
+  GROUP_ORDER.forEach(g=>{
+    const pages=getPagesForDay(dayKey).filter(p=>getTaskGroup(p)===g.id);
+    if(!pages.length) return;
+    anyTasks=true;
+    const done=pages.filter(p=>isDone(p)).length;
+    const pct=Math.round(done/pages.length*100);
+    const block=document.createElement('div');
+    block.className='group-block';
+    const dot=`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;"></span>`;
+    block.innerHTML=`
+      <div class="group-header">
+        <div class="group-name">${dot}<span>${g.id}</span></div>
+        <div class="group-pct">${done}/${pages.length} · ${pct}%</div>
+      </div>
+      <div class="group-bar-bg"><div class="group-bar-fill" style="width:${pct}%;background:${g.color};"></div></div>
+    `;
+    pages.forEach(page=>{
+      const name=getTaskName(page);
+      const done_=isDone(page);
+      const isUpdating=state.updating.has(page.id);
+      const row=document.createElement('div');
+      row.className='task-row'+(isUpdating?' loading':'');
+      row.setAttribute('role','checkbox');
+      row.setAttribute('aria-checked',done_);
+      row.innerHTML=`
+        <div class="check-box${done_?' done':''}" style="${done_?'background:'+g.color+';':''}">
+          ${done_?'<svg viewBox="0 0 16 16" width="11" height="11"><path d="M13.5 4.5L6 12L2.5 8.5" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+        </div>
+        <div class="task-text${done_?' done':''}">${name}</div>
+        ${isUpdating?'<div style="font-size:11px;color:var(--text-3)">更新中…</div>':''}
+      `;
+      row.addEventListener('click',()=>toggleTask(page.id,done_));
+      block.appendChild(row);
+    });
+    container.appendChild(block);
+  });
+
+  if(!anyTasks){
+    container.innerHTML='<div class="empty-state">這天沒有任務資料，請點「↻ 同步」重新讀取</div>';
+  }
+}
+
+function renderOffline(){
+  document.getElementById('main-content').innerHTML=
+    '<div class="empty-state">無法連接 Notion，請確認網路連線並點「↻ 同步」重試</div>';
+}
+
+function renderWeekGrid(){
+  const grid=document.getElementById('week-grid');grid.innerHTML='';
+  DAYS.forEach((_,i)=>{
+    const{total,done}=getDayStats(i);
+    const pct=total?Math.round(done/total*100):0;
+    const barH=Math.max(3,Math.round(pct*0.32));
+    const isToday=i===getTodayIdx();
+    const isActive=i===state.activeDay;
+    const cell=document.createElement('div');
+    cell.className='week-cell'+(isActive?' active':'');
+    cell.innerHTML=`
+      <div class="week-day${isToday?' today':''}">${DAY_ZH[i].replace('週','')}</div>
+      <div class="week-pct">${total?pct+'%':'—'}</div>
+      <div class="week-bar-bg">
+        <div class="week-bar-fill" style="height:${barH}px;background:${pct>=80?'#1D9E75':pct>=50?'#378ADD':'#B4B2A9'};"></div>
+      </div>
+    `;
+    cell.addEventListener('click',()=>{state.activeDay=i;render();});
+    grid.appendChild(cell);
+  });
+}
+
+function render(){
+  document.getElementById('today-label').textContent=formatDate();
+  renderDayTabs();
+  renderGroups();
+  renderWeekGrid();
+  updateStats();
+}
+
+document.getElementById('refresh-btn').addEventListener('click',loadFromNotion);
+
+loadFromNotion();
+</script>
+</body>
+</html>
