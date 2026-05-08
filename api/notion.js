@@ -10,11 +10,10 @@ export default async function handler(req, res) {
   const path = req.query.path || '';
   const notionUrl = 'https://api.notion.com/v1/' + path;
 
-  // 拿 authorization header（headers 都是小寫的）
   const auth = req.headers['authorization'] || req.headers['Authorization'];
   
   console.log('[Proxy] →', req.method, notionUrl);
-  console.log('[Proxy] Auth present:', !!auth);
+  console.log('[Proxy] Auth header value:', auth ? auth.substring(0, 20) + '...' : 'MISSING');
 
   if (!auth) {
     return res.status(401).json({ error: 'Missing authorization header' });
@@ -39,6 +38,9 @@ export default async function handler(req, res) {
     const notionResp = await fetch(notionUrl, fetchOptions);
     const data = await notionResp.json();
     console.log('[Proxy] ←', notionResp.status);
+    if (notionResp.status === 401) {
+      console.log('[Proxy] Notion 401 details:', JSON.stringify(data));
+    }
     return res.status(notionResp.status).json(data);
   } catch (err) {
     console.error('[Proxy] Error:', err.message);
