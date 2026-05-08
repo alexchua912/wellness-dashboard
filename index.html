@@ -188,7 +188,7 @@ function showError(msg){
 function clearError(){document.getElementById('error-container').innerHTML='';}
 
 async function notionRequest(endpoint, method='GET', body=null){
-  const url = `https://wellness-dashboard-kappa.vercel.app/api/notion${endpoint}`;
+  const url = `${window.location.origin}/api/notion${endpoint}`;
   const opts = {
     method,
     headers:{
