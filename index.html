@@ -186,22 +186,29 @@ function showError(msg){
 }
 function clearError(){document.getElementById('error-container').innerHTML='';}
 
-async function notionRequest(endpoint, method='GET', body=null){
-  const path = endpoint.replace(/^\/v1\//, "");
-  const url = `${window.location.origin}/api/notion?path=${encodeURIComponent(path)}`;
-  const opts = {
-const response = await fetch(`${PROXY}?path=databases/${DATABASE_ID}/query`, {
-  method: 'POST',
-  headers: {
-    'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    // ... 這裡保留您原本的 sorts 或 filter 條件 ...
-  })
-});
-  if(body) opts.body=JSON.stringify(body);
-  const resp = await fetch(url, opts);
+async function notionRequest(endpoint, method='GET', body=null) {
+    const path = endpoint.replace(/^\/v1\//, "");
+    // 使用您原本設定的動態 URL
+    const url = `${window.location.origin}/api/notion?path=${encodeURIComponent(path)}`;
+    
+    // 設定請求選項 (在這裡我們拿掉了 Authorization，只保留安全的標頭)
+    const opts = {
+        method: method,
+        headers: {
+            'Notion-Version': '2022-06-28',
+            'Content-Type': 'application/json'
+        }
+    };
+    
+    // 如果有附帶資料 (body)，就加進請求選項裡
+    if (body) {
+        opts.body = JSON.stringify(body);
+    }
+    
+    // 發送請求並回傳結果
+    const response = await fetch(url, opts);
+    return await response.json();
+}
   if(!resp.ok){
     const err=await resp.text();
     throw new Error(`Notion API ${resp.status}: ${err}`);
