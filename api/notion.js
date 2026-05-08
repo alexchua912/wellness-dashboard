@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+  // CORS 設定
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,Notion-Version');
@@ -10,14 +11,15 @@ export default async function handler(req, res) {
   const path = req.query.path || '';
   const notionUrl = 'https://api.notion.com/v1/' + path;
 
-  const auth = `Bearer ${process.env.NOTION_TOKEN}`;
+  // 🔥 關鍵修改：不再從 req.headers 抓取，而是直接讀取 Vercel 系統的環境變數
+  const token = process.env.NOTION_TOKEN;
   
-  console.log('[Proxy] →', req.method, notionUrl);
-  console.log('[Proxy] Auth header value:', auth ? auth.substring(0, 20) + '...' : 'MISSING');
-
-  if (!auth) {
-    return res.status(401).json({ error: 'Missing authorization header' });
+  if (!token) {
+    console.error('[Proxy] Error: NOTION_TOKEN is not set in Vercel environment variables.');
+    return res.status(500).json({ error: 'Server configuration error: Missing Token' });
   }
+
+  const auth = `Bearer ${token}`;
 
   const fetchOptions = {
     method: req.method,
@@ -29,21 +31,21 @@ export default async function handler(req, res) {
   };
 
   if (req.method !== 'GET' && req.method !== 'OPTIONS' && req.body) {
-    fetchOptions.body = typeof req.body === 'string' 
-      ? req.body 
-      : JSON.stringify(req.body);
+    fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
   }
 
   try {
     const notionResp = await fetch(notionUrl, fetchOptions);
     const data = await notionResp.json();
-    console.log('[Proxy] ←', notionResp.status);
-    if (notionResp.status === 401) {
-      console.log('[Proxy] Notion 401 details:', JSON.stringify(data));
+    
+    // 如果 Notion 依然報錯，印出 log 方便除錯
+    if (!notionResp.ok) {
+      console.log('[Proxy] Notion API Error:', notionResp.status, data);
     }
+    
     return res.status(notionResp.status).json(data);
   } catch (err) {
-    console.error('[Proxy] Error:', err.message);
+    console.error('[Proxy] Fetch Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
