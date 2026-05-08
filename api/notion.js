@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const path = req.query.path || '';
   const notionUrl = 'https://api.notion.com/v1/' + path;
 
-  const auth = req.headers['authorization'] || req.headers['Authorization'];
+  const auth = `Bearer ${process.env.NOTION_TOKEN}`;
   
   console.log('[Proxy] →', req.method, notionUrl);
   console.log('[Proxy] Auth header value:', auth ? auth.substring(0, 20) + '...' : 'MISSING');
