@@ -7,23 +7,32 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // 從 query string 拿路徑（更可靠）
   const path = req.query.path || '';
   const notionUrl = 'https://api.notion.com/v1/' + path;
 
+  // 拿 authorization header（headers 都是小寫的）
+  const auth = req.headers['authorization'] || req.headers['Authorization'];
+  
   console.log('[Proxy] →', req.method, notionUrl);
+  console.log('[Proxy] Auth present:', !!auth);
+
+  if (!auth) {
+    return res.status(401).json({ error: 'Missing authorization header' });
+  }
 
   const fetchOptions = {
     method: req.method,
     headers: {
-      'Authorization': req.headers['authorization'],
+      'Authorization': auth,
       'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json',
     },
   };
 
   if (req.method !== 'GET' && req.method !== 'OPTIONS' && req.body) {
-    fetchOptions.body = JSON.stringify(req.body);
+    fetchOptions.body = typeof req.body === 'string' 
+      ? req.body 
+      : JSON.stringify(req.body);
   }
 
   try {
