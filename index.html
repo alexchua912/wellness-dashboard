@@ -188,7 +188,8 @@ function showError(msg){
 function clearError(){document.getElementById('error-container').innerHTML='';}
 
 async function notionRequest(endpoint, method='GET', body=null){
-  const url = `${window.location.origin}/api/notion${endpoint}`;
+  const path = endpoint.replace(/^\/v1\//, "");
+  const url = `${window.location.origin}/api/notion?path=${encodeURIComponent(path)}`;
   const opts = {
     method,
     headers:{
