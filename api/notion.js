@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     method: req.method,
     headers: {
       'Authorization': auth,
-      'Notion-Version': '2022-06-28',
+      'Notion-Version': '2025-09-03',
       'Content-Type': 'application/json',
     },
   };
